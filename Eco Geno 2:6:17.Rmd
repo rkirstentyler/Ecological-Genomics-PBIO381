@@ -75,7 +75,7 @@ CNTTTATTAACAACACGTTTCCTGACTGACNGTTGCATGCATCTGTCTGAGATTTTCTTATTTGTTCCCCTCCCCATGGT
 ```
 fastqc FILENAME.fq.gz
 ```
-*after that's done, move the .html file to your computer using the scpcommand from your machine (hint: open another terminal or putty window)*
+*after that's done, move the .html file to your computer using the scpcommand from your machine (open another terminal)*
 
 ```
 scp mpespeni@pbio381.uvm.edu:/data/project_data/fastq/38_6-24_S_5_R2_fastqc.html

@@ -1,0 +1,64 @@
+---
+title: "Eco Geno 2/13/17"
+author: "R Kirsten Tyler"
+date: "2/13/2017"
+output: html_document
+---
+**Making a reference transcriptome and Mapping reads to the reference transcriptome**
+
+*Using TransDecoder to predict longest Open Reading Frames (ORF's)*
+
+```{}
+wget https://github.com/TransDecoder/TransDecoder/archive/v3.0.1.zip
+```
+
+*Choose an individual in your sample to create a reference genome and compare others to it*   
+
+-----Melissa chose one sample from our starfish data-----   
+-it had many samples (all 5 time points)
+-it had enough reads (50 million) which is optimal for a transcriptome assembly
+
+*Evaluate the "longest_orfs.cds" assembly after running Transdecoder*
+
+```{}
+$ /data/popgen/trinityrnaseq-Trinity-v2.3.2/util/TrinityStats.pl longest_orfs.cds
+```
+
+*Also evaluate the assembly using blastp to compare to uniprot_swissprot database*
+
+```{}wget https://github.com/Trinotate/Trinotate/releases
+
+# Run the script to download the relevant databases.
+/data/popgen/Trinotate-3.0.1/admin/Build_Trinotate_Boilerplate_SQLite_db.pl  Trinotate
+
+*To improve assembly*   
+(1) using more reads from other individuals or trying a different individual   
+(2) changing the cleaning and assembly parameters. We can evaluate based on the percentage of genes that have good blastp hits and the percentage of single copy orthologs included in the reference (for example using the new program (BUSCO)[http://busco.ezlab.org/]   
+
+**Map reads from individual samples to reference transcriptome using program BWA**   
+
+Right now, we are mapping the reads of our file to the reference transcriptome that Melissa made already. First, rename the file. Then run the program BWA and generate a text file.
+
+*rename file*   
+```{}
+[rtyler1@pbio381 ~]$ cd /data/scripts/
+[rtyler1@pbio381 scripts]$ cp bwaaln.sh ~/scripts/bwaaln_tyler.sh
+```
+*Also, THERE IS AN ENORMOUS SNOWSTORM HAPPENING OUTSIDE RIGHT NOW*   
+
+*run file and generate a text file*   
+```{}
+[rtyler1@pbio381 scripts]$ bash bwaaln_tyler.sh >> bwaoutput_tyler.txt
+```
+
+This will generate a SAM file. 
+*To check out our .sam file*
+```{}
+head *.sam
+```
+
+-Each read gets a flag that describes how well it mapped [What the numbers mean](http://seqanswers.com/forums/showthread.php?t=17314)   
+
+-Map quality is the 5th column in the .sam file
+
+
