@@ -1,0 +1,45 @@
+---
+title: "Eco Geno 2/8/17"
+author: "R Kirsten Tyler"
+date: "2/8/2017"
+output: html_document
+---
+**Continuing with RNAseq analysis**
+
+- finish cleaning (trimomatic)
+- fastqc (visual)
+- make table of # reads
+- design assembly tests
+- start assemblies
+- evaluate assemblies
+
+*In terminal, some useful commands*  
+
+The "move" command can change the name of your file OR move it to a new directory (or both at the same time)   
+
+```
+mv FILENAME NEWFILENAME
+```
+*running fastq to look at the quality of the data*   
+
+```
+fastqc FILENAME.fq.gz   
+```
+
+*after that's done, move the .html file to your computer using the scp command from your machine (hint: open another terminal but DON'T sign in to the server)*   
+
+```
+[rtyler1@pbio381 ~]$ scp rtyler1@pbio381.uvm.edu:/data/project_data/fastq/cleanreads/19_5-11_H_0_R2_clean_paired_fastqc.html .
+```
+
+We will only use the paired reads to assemble
+
+What would change the assembly? 
+- if we varied parameters
+
+
+
+
+
+
+

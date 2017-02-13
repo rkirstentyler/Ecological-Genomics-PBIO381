@@ -1,0 +1,86 @@
+---
+title: "Eco Geno 2/6/17"
+author: "R Kirsten Tyler"
+date: "2/6/2017"
+output: 
+  html_document: 
+    theme: cosmo
+---
+**starting a de novo assembly using Trinity**  
+
+*logging in the to the server* 
+```
+kirstensmac$ ssh rtyler1@pbio381.uvm.edu
+rtyler1@pbio381.uvm.edu's password: xxxxx 
+```
+
+*finding the fastq files*
+```
+[rtyler1@pbio381 ~]$ cd /data/project_data/fastq
+[rtyler1@pbio381 fastq]$ ll  
+```
+
+*examples of files*
+```
+-rw-r--r--. 1 mlloyd   users 1947250259 Feb  5 15:21 07_5-08_S_1_R1.fq.gz
+-rw-r--r--. 1 mlloyd   users 2161217591 Feb  5 15:22 07_5-08_S_1_R2.fq.gz
+-rw-r--r--. 1 mlloyd   users  234706841 Feb  2 12:18 07_5-11_S_4_R1.fq.gz
+-rw-r--r--. 1 mlloyd   users  247650662 Feb  2 12:18 07_5-11_S_4_R2.fq.gz  
+```
+  
+-R1 and R2 = paired reads for each sample  
+-S scale 1-4 = 1 lesion, multiple lesions, missing arm, falling apart 
+
+*my sample for evaluating cleaning and evaluating again*  
+```
+-rw-r--r--. 1 mlloyd   users 1022067764 Feb  5 15:22 19_5-11_H_0_R1.fq.gz
+-rw-r--r--. 1 mlloyd   users 1093493001 Feb  5 15:23 19_5-11_H_0_R2.fq.gz
+```
+
+*let's take a look at the files*  
+
+The fast file format has 4 lines for each read: the read identifier, the read sequence, “+”, and a sequence of quality scores for each base.
+
+[A useful table of (Quality) Phred scores](http://www.drive5.com/usearch/manual/quality_score.html)
+
+```
+[rtyler1@pbio381 fastq]$ zcat 19_5-11_H_0_R1.fq.gz | head  
+
+@J00160:63:HHHT2BBXX:1:1101:25591:1244 1:N:0:ATTACTCG+CTTCGCCT
+GNCAGTTCCATTCCACACTTTCAAGATACCNTANATGCNAGTNCCNTTCCACACNTTCNANGCACTCCTCTATGCCCACCTGTNTTNATTTCANTCCTAAT
++
+<#AFFJFFJFJJJJJJJJJJJJJJJJJJJJ#JJ#JJJJ#JJJ#JJ#JJJJJJJJ#JJJ#J#AJJJFJJ7JJJJJJJAJJFJJJ#JF#JJJFAJ#JFFAJF-
+@J00160:63:HHHT2BBXX:1:1101:27519:1244 1:N:0:ATTACTCG+CTTCGCCT
+CNGATCATTAAAATATCCACGAAACAATATNAAATCACACGATATTTTTGTTTAAATANCTTACATAATTAGTATATCAATATTGCCGTGACANCCAATGT
++
+A#AFFJJJJJJJJJJJJJJJJJJJJJJJJJ#JJJJJJJJJJJJJJJJJJJJJJJJJJJ#JJJJJJJJJJJJJJJJJJJJJJJJJJJAJJJFJ7#FFFJJFJ
+@J00160:63:HHHT2BBXX:1:1101:28270:1244 1:N:0:ATTACTCG+CTTCGCCT
+CNTTTATTAACAACACGTTTCCTGACTGACNGTTGCATGCATCTGTCTGAGATTTTCTTATTTGTTCCCCTCCCCATGGTGGATCTATTCCCGACCCATCA  
+```
+
+*using vim in terminal, we will change the file name to our own file name*
+```
+[rtyler1@pbio381 scripts]$ vim trim_example.sh  
+```
+ - press i to insert (editing the file name)  
+ - press esc then  
+ - w to save  
+ - q to quit  
+ 
+*running trimmomatic to clean the file*  
+ ```
+[rtyler1@pbio381 scripts]$ bash trim_example.sh
+```
+*running fastq to look at the quality of the data*
+```
+fastqc FILENAME.fq.gz
+```
+*after that's done, move the .html file to your computer using the scpcommand from your machine (hint: open another terminal or putty window)*
+
+```
+scp mpespeni@pbio381.uvm.edu:/data/project_data/fastq/38_6-24_S_5_R2_fastqc.html
+```
+
+
+
+
