@@ -1,0 +1,137 @@
+---
+title: "Eco Geno 2/15/17"
+author: "R Kirsten Tyler"
+date: "2/15/2017"
+output: html_document
+---
+**We have a SAM file....now what?**    
+
+A tab delimited file that tells us everything we want to know about how well (or whether or not) our fastq file mapped to our reference
+
+*Get to your SAM file in scripts*   
+
+```{}
+[rtyler1@pbio381 ~]$ cd scripts
+[rtyler1@pbio381 scripts]$ ll
+total 8521880
+-rw-r--r--. 1 rtyler1 users 8491636603 Feb 13 11:31 19_5-11_H_0_bwaaln.sam
+-rw-r--r--. 1 rtyler1 users  114638736 Feb 13 11:20 19_5-11_H_0_R1.fq.gz_left_clean_paired.fq.sai
+-rw-r--r--. 1 rtyler1 users  120112320 Feb 13 11:28 19_5-11_H_0_R2.fq.gz_right_clean_paired.fq.sai
+-rwxr-xr-x. 1 rtyler1 users        914 Feb 13 11:08 bwaaln_tyler.sh
+-rw-r--r--. 1 rtyler1 users         97 Feb 13 11:12 bwaoutput_tyler.txt
+-rwxr--r--. 1 rtyler1 users        811 Feb  6 11:39 trim_example.sh
+[rtyler1@pbio381 scripts]$ 
+```
+
+The SAM file includes: 
+
+ - the read, aka. query, name,
+ - a FLAG (number with information about mapping success and orientation and whether the read is the left or right read),
+ - the reference sequence name to which the read mapped
+ - the leftmost position in the reference where the read mapped
+ - the mapping quality (Phred-scaled)
+ - a CIGAR string that gives alignment information (how many bases Match (M), where there’s an Insertion (I) or Deletion (D))
+ - an ‘=’, mate position, inferred insert size (columns 7,8,9),
+ - the query sequence and Phred-scaled quality from the FASTQ file (columns 10 and 11),
+ - then Lots of good information in TAGS at the end, if the read mapped,  - including whether it is a unique read (XT:A:U), the number of best hits (X0:i:1), the number of suboptimal hits (X1:i:0).
+
+*Here's a view of my SAM file*   
+
+```{}
+J00160:63:HHHT2BBXX:4:2228:14438:49019  81      TRINITY_DN30214_c0_g1::TRINITY_DN3
+J00160:63:HHHT2BBXX:4:2228:14438:49019  161     TRINITY_DN30214_c0_g1::TRINITY_DN3
+J00160:63:HHHT2BBXX:4:2228:14823:49019  77      *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:14823:49019  141     *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:17036:49019  77      *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:17036:49019  141     *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:26332:49019  77      *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:26332:49019  141     *       0       0       *       *
+J00160:63:HHHT2BBXX:4:2228:29173:49019  77      *       0       0       *       *
+```
+
+The second column is the flag number
+
+*To look at SAM files and decode their flags*   
+
+```{}
+tail -n 100 YOURFILENAME.sam > tail.sam
+vim tail.sam
+
+:set nowrap
+```
+
+Go to [this website](https://broadinstitute.github.io/picard/explain-flags.html) to explain the SAM flags.
+
+Type in your SAM flag number and this cool website will list the properties of your read based on the flag number. Cool.
+
+BWA website will explain the codes associated with reads
+[BWA Website](http://bio-bwa.sourceforge.net/bwa.shtml)   
+
+*BWA generates the following optional fields*
+
+Tags starting with ‘X’ are specific to BWA.
+
+Tag	Meaning
+NM	Edit distance
+MD	Mismatching positions/bases
+AS	Alignment score
+BC	Barcode sequence
+X0	Number of best hits
+X1	Number of suboptimal hits found by BWA
+XN	Number of ambiguous bases in the referenece
+XM	Number of mismatches in the alignment
+XO	Number of gap opens
+XG	Number of gap extentions
+XT	Type: Unique/Repeat/N/Mate-sw
+XA	Alternative hits; format: (chr,pos,CIGAR,NM;)*
+XS	Suboptimal alignment score
+XF	Support from forward/reverse alignment
+XE	Number of supporting seeds
+
+*Now let’s see how many of our reads map uniquely*   
+
+The code:
+```{}
+The code XT
+$ grep -c XT:A:U YOURFILENAME.sam 
+1177827
+
+$ grep -c X0:i:1 YOURFILENAME.sam
+1182952
+```
+
+For my SAM file: 
+
+```{}
+[rtyler1@pbio381 scripts]$ grep -c XT:A:U 19_5-11_H_0_bwaaln.sam
+2578534
+```
+So we see here that I have 2.5 million uniquely mapped reads.   
+
+```{}
+[rtyler1@pbio381 scripts]$ grep -c X0:i:1 19_5-11_H_0_bwaaln.sam
+2597995
+```
+So we see here that I have about 2.6 million "best hits"
+
+*Now we will look at the number of reads that map to each gene*
+
+From Melissa: 
+
+We will use a custom python script (by my friend Dan Barshis and published with the Simple Fool’s Guide to Population Genomics) called countxpression.py. This script will take any number of input *.sam files and, for each .sam file, extract the number of reads that map to each gene (i.e. the “counts”). It will also generate a summary output of useful information including proportion of quality read alignments. The script requires 4 input variables: mapqualitythreshold, lengththreshold, outputstatsfilename, anynumberofinputfiles.
+
+Let's do it. 
+
+```{}
+cd /data/scripts
+cp countxpression_PE.py ~/scripts      #or copy to your directory with the .sam file
+
+python countxpression_PE.py 20 35 countstatssummary.txt 19_5-11_H_0_bwaaln.sam
+```
+
+
+
+
+
+
+
