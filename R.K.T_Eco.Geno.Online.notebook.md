@@ -12,8 +12,6 @@ Class notes on learning the programs and methods involved in analyzing genomic d
 ## Date started: (January 2017)   
 ## Date end:   (year-month-day)    
 
-## Philosophy   
-Science should be reproducible and one of the best ways to achieve this is by logging research activities in a notebook. Because science/biology has increasingly become computational, it is easier to document computational projects in an electronic form, which can be shared online through Github.    
 
 ### Helpful features of the notebook     
 
@@ -32,13 +30,13 @@ Science should be reproducible and one of the best ways to achieve this is by lo
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.  
 
 
-### Table of contents for 60 entries (Format is *Page: Date(with year-month-day). Title*)        
-* [Page 1: 2017-01-18](#id-section1). First class; intros (from Andrew)
-* [Page 2: 2016-6-16](#id-section2). Eco Geno in class notes 2/6/17
-* [Page 3:](#id-section3).
-* [Page 4:](#id-section4).
-* [Page 5:](#id-section5).
-* [Page 6:](#id-section6).
+### Table of contents for 60 entries (Format is *Page: Date(with day-month-year). Title*)        
+* [Page 1: 1/18/2017](#id-section1). First class; intros (from Andrew)
+* [Page 2: 2/6/2017](#id-section2). Starting a de novo assembly using Trinity
+* [Page 3: 2/8/2017] (#id-section3). Continuing with RNAseq analysis
+* [Page 4:](#id-section4). Making a reference transcriptome and Mapping reads to the reference transcriptome
+* [Page 5:](#id-section5). We have a SAM file....now what?
+* [Page 6:](#id-section6). Data analysis using R
 * [Page 7:](#id-section7).
 * [Page 8:](#id-section8).
 * [Page 9:](#id-section9).
@@ -168,7 +166,7 @@ Melissa has a data set with 96 sea stars and then the 16s microbiome. Would be c
 ### Page 2: 2/6/17 Eco Geno in class notes 
 
 ---
-**starting a de novo assembly using Trinity**  
+**Starting a de novo assembly using Trinity**  
 
 *logging in the to the server* 
 ```
@@ -473,16 +471,138 @@ cp countxpression_PE.py ~/scripts      #or copy to your directory with the .sam 
 python countxpression_PE.py 20 35 countstatssummary.txt 19_5-11_H_0_bwaaln.sam
 ```
 
-
-
-
-
-
-
-
 ------
 <div id='id-section6'/>
-### Page 6:
+### Page 6: 2/22/17 Eco Geno in class notes
+
+**Data analysis using R**
+
+source("http://bioconductor.org/workflows.R")
+workflowInstall("rnaseqGene")
+
+source("https://bioconductor.org/biocLite.R")
+biocLite("DESeq2")
+
+setwd("~/Documents/Adv Quant Methods for Life Sci NR395/Seastar Data")
+library("DESeq2")
+
+library("ggplot2")
+
+countsTable <- read.delim('countsdata_trim.txt', header=TRUE, stringsAsFactors=TRUE, row.names=1)
+countData <- as.matrix(countsTable)
+head(countData)
+
+conds <- read.delim("cols_data_trim.txt", header=TRUE, stringsAsFactors=TRUE, row.names=1)
+head(conds)
+colData <- as.data.frame(conds)
+head(colData)
+
+#################### Build dataset, model, and run analyses
+
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ day + location + health)
+# In this typical model, the "sex effect" represents the overall effect controlling for differences due to population and devstage. page 26-27 manual DESeq2.pdf
+# The last term in the model is what is tested.  In this case sex.
+#  This is not the same as an interaction.
+
+
+dim(dds)
+
+dds <- dds[ rowSums(counts(dds)) > 100, ]
+dim(dds)
+# at > 100; little more than an average of 10 reads per sample for the 93 samples
+
+colSums(counts(dds)) #checking out the data: how many reads are coming from each sample. 
+hist(colSums(counts(dds)), breaks = 80, xlim=c(0,max(colSums(counts(dds)))))#On average there are 2 million uniquely mapped reads in this sample
+
+colData(dds)$health <- factor(colData(dds)$health, levels=c("H","S"))
+
+dds <- DESeq(dds)  # this step takes a loooong time ~4 minutes with the trimmed data set
+# estimating size factors
+# estimating dispersions
+# gene-wise dispersion estimates
+# mean-dispersion relationship
+# final dispersion estimates
+# fitting model and testing
+# -- replacing outliers and refitting for 3308 genes
+# -- DESeq argument 'minReplicatesForReplace' = 7 
+# -- original counts are preserved in counts(dds)
+# estimating dispersions
+# fitting model and testing
+
+save(dds, file="dds.trim.Robject")
+
+res <- results(dds)
+res <- res[order(res$padj),]
+head(res)
+# log2 fold change (MAP): health S vs H 
+# Wald test p-value: health S vs H (sick will be shown on the top half (and vv) of the plot below)
+# DataFrame with 6 rows and 6 columns
+# baseMean log2FoldChange     lfcSE
+# <numeric>      <numeric> <numeric>
+# TRINITY_DN46709_c0_g1_TRINITY_DN46709_c0_g1_i1_g.23138_m.23138 1950.0719       2.488783 0.4311875
+# TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110  902.2693       2.475891 0.4599085
+# TRINITY_DN43359_c0_g1_TRINITY_DN43359_c0_g1_i1_g.14658_m.14658  889.9707       1.163219 0.2482335
+# TRINITY_DN47215_c1_g4_TRINITY_DN47215_c1_g4_i3_g.25054_m.25054  774.1126       1.723917 0.3650258
+# TRINITY_DN47215_c0_g1_TRINITY_DN47215_c0_g1_i5_g.25051_m.25051  911.7634       1.586693 0.3431307
+# TRINITY_DN45416_c4_g2_TRINITY_DN45416_c4_g2_i3_g.19333_m.19333 1629.8753       1.775765 0.3873817
+# stat       pvalue         padj
+# <numeric>    <numeric>    <numeric>
+# TRINITY_DN46709_c0_g1_TRINITY_DN46709_c0_g1_i1_g.23138_m.23138  5.771927 7.837024e-09 8.691260e-06
+# TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110  5.383443 7.307426e-08 4.051968e-05
+# TRINITY_DN43359_c0_g1_TRINITY_DN43359_c0_g1_i1_g.14658_m.14658  4.685987 2.786136e-06 7.724563e-04
+# TRINITY_DN47215_c1_g4_TRINITY_DN47215_c1_g4_i3_g.25054_m.25054  4.722727 2.327027e-06 7.724563e-04
+# TRINITY_DN47215_c0_g1_TRINITY_DN47215_c0_g1_i5_g.25051_m.25051  4.624166 3.761091e-06 8.342101e-04
+# TRINITY_DN45416_c4_g2_TRINITY_DN45416_c4_g2_i3_g.19333_m.19333  4.584018 4.561241e-06 8.430694e-04
+
+summary(res)
+# out of 13334 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)     : 50, 0.37% 
+# LFC < 0 (down)   : 8, 0.06% 
+# outliers [1]     : 539, 4% 
+# low counts [2]   : 11686, 88% 
+# (mean count < 80)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+plotMA(res, main="DESeq2", ylim=c(-2,2))
+
+## Check out one of the genes to see if it's behaving as expected....
+d <- plotCounts(dds, gene="TRINITY_DN46709_c0_g1_TRINITY_DN46709_c0_g1_i1_g.23138_m.23138", intgroup=(c("health","day","location")), returnData=TRUE)
+head(d)
+p <- ggplot(d, aes(x= health, y=count, shape = day)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
+p <- p + geom_point(position=position_jitter(w=0.3,h=0), size = 3) + scale_y_log10(breaks=c(25,100,1000)) + ylim(0,2500)
+p
+
+# 2.2 Data quality assessment by sample clustering and visualization 
+
+vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
+
+plotPCA(vsd, intgroup=c("health"))
+plotPCA(vsd, intgroup=c("day"))
+plotPCA(vsd, intgroup=c("location"))
+plotPCA(vsd, intgroup=c("health","location"))
+
+# rld <- rlog(dds, blind=FALSE) # this takes too long with such a large data set!
+# plotPCA(rld, intgroup=c("health","day"))
+
+
+#to save the plot as a pdf
+pdf(file="PCA_1v2_allgenes.pdf", height=5.5, width=5.5)
+plotPCA(rld, intgroup=c("health","day","location"))
+dev.off()
+
+pdf(file="PCA_1v2.pdf", height=5.5, width=5.5)
+data <- plotPCA(rld, intgroup=c("health","day","location"), returnData=TRUE)
+percentVar <- round(100 * attr(data, "percentVar"))
+ggplot(data, aes(PC1, PC2, color=sex, shape=devstage)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance"))
+dev.off()
+
+
+
 ------
 <div id='id-section7'/>
 ### Page 7:
