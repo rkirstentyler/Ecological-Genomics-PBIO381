@@ -1,11 +1,12 @@
-# Project title    
+  
 
-### Author: ANTdrew D. Nguyen     
-### Ecological Genomics:   
+### Ecological Genomics Notebook   
+### Author: R Kirsten Tyler: A PhD student at UVM studying invasive plants
+
 
 ## Overall Description of notebook      
 
-fill in your description here!
+Class notes on learning the programs and methods involved in analyzing genomic data to answer our big questions!
 
 
 ## Date started: (year-month-day)   
