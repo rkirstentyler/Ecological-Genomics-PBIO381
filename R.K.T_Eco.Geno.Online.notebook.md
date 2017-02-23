@@ -33,10 +33,10 @@ Class notes on learning the programs and methods involved in analyzing genomic d
 ### Table of contents for 60 entries (Format is *Page: Date(with day-month-year). Title*)        
 * [Page 1: 1/18/2017](#id-section1). First class; intros (from Andrew)
 * [Page 2: 2/6/2017](#id-section2). Starting a de novo assembly using Trinity
-* [Page 3: 2/8/2017] (#id-section3). Continuing with RNAseq analysis
-* [Page 4:](#id-section4). Making a reference transcriptome and Mapping reads to the reference transcriptome
-* [Page 5:](#id-section5). We have a SAM file....now what?
-* [Page 6:](#id-section6). Data analysis using R
+* [Page 3: 2/8/2017](#id-section3). Continuing with RNAseq analysis
+* [Page 4: 2/13/17](#id-section4). Making a reference transcriptome and Mapping reads to the reference transcriptome
+* [Page 5: 2/15/17](#id-section5). We have a SAM file....now what?
+* [Page 6: 2/22/17](#id-section6). Data analysis using R
 * [Page 7:](#id-section7).
 * [Page 8:](#id-section8).
 * [Page 9:](#id-section9).
