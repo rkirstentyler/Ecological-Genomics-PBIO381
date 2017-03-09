@@ -1,0 +1,209 @@
+---
+title: "Pop Genomics 2: Estimating diversity within populations"
+author: "R Kirsten Tyler"
+date: "3/8/2017"
+output: html_document
+---
+
+
+##Pop Genomics 2: Estimating diversity within populations##
+
+Last time, we were filtering SNPs to get rid of SNPs that are less reliable or have more polymorphisms or not true.
+We investigated how SNPs behave. Using the Hardy-W E, we looked at numbers of heteroz vs homoz: do they match expectations?
+
+##Today we have a VCF data for all RNAseq data for all individuals##
+
+Let's go into the directory where our compressed data can be found:
+```{}
+[rtyler1@pbio381 ~]$ cd /data/project_data/snps/reads2snps/
+```
+
+Let's open the file:
+```{}
+[rtyler1@pbio381 reads2snps]$ vcftools --gzvcf SSW_byind.txt.vcf.gz
+```
+
+VCFtools - 0.1.14
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--gzvcf SSW_byind.txt.vcf.gz
+
+Using zlib version: 1.2.7
+After filtering, kept 22 out of 22 Individuals
+After filtering, kept 7485987 out of a possible 7485987 Sites
+
+
+Then we open and use VCFtools to filter
+
+```{}
+[rtyler1@pbio381 reads2snps]$ vcftools --gzvcf SSW_byind.txt.vcf.gz --min-alleles 2 --max-alleles 2 --maf 0.02 --max-missing 0.8 --recode --out ~/SSW_all_biallelic.MAF0.02.Miss0.8
+```
+We can probably trust this data because of the filters we applied. We've cut the amount of data down by a lot.
+
+Now we will rezip the file: 
+
+```{}
+[rtyler1@pbio381 ~]$ gzip SSW_all_biallelic.MAF0.02.Miss0.8.recode.vcf
+```
+
+OK, now we are ready to run a Hardy-W E test to see which sites show deviation of observed from expectd heteroz. 
+
+```{}
+[rtyler1@pbio381 ~]$ vcftools --gzvcf SSW_all_biallelic.MAF0.02.Miss0.8.recode.vcf.gz --hardy
+```
+
+Now we have a file (out.hwe). 
+
+##Let's open R and check it out!##
+
+```{}
+> hwe <- read.table ("out.hwe", header =T)
+> str(hwe) #look at structure
+```
+'data.frame':	1464 obs. of  8 variables:
+ $ CHR               : Factor w/ 363 levels "TRINITY_DN27892_c0_g1_TRINITY_DN27892_c0_g1_i1_g.3123_m.3123",..: 358 358 358 358 358 358 358 358 358 358 ...
+ $ POS               : int  4733 5850 5865 5869 5874 6096 6146 6201 6289 6325 ...
+ $ OBS.HOM1.HET.HOM2.: Factor w/ 52 levels "10/0/12","10/10/2",..: 36 51 36 36 36 36 36 29 36 48 ...
+ $ E.HOM1.HET.HOM2.  : Factor w/ 22 levels "10.23/9.55/2.23",..: 14 1 14 14 14 14 14 11 14 1 ...
+ $ ChiSq_HWE         : num  0.0119 1.4547 0.0119 0.0119 0.0119 ...
+ $ P_HWE             : num  1 0.361 1 1 1 ...
+ $ P_HET_DEFICIT     : num  1 0.954 1 1 1 ... #fewer heteroz that we expect (inbreeding)
+ $ P_HET_EXCESS      : num  1 0.276 1 1 1 ... #excess in heteroz - maybe gene duplication (paralogy)
+
+```{}
+> summary(hwe)
+```
+                                                           CHR      
+ TRINITY_DN45147_c0_g1_TRINITY_DN45147_c0_g1_i3_g.18680_m.18680:  34  
+ TRINITY_DN46382_c0_g1_TRINITY_DN46382_c0_g1_i1_g.22149_m.22149:  28  
+ TRINITY_DN45750_c0_g1_TRINITY_DN45750_c0_g1_i2_g.20209_m.20209:  27  
+ TRINITY_DN47302_c3_g1_TRINITY_DN47302_c3_g1_i2_g.25471_m.25471:  21  
+ TRINITY_DN46789_c1_g3_TRINITY_DN46789_c1_g3_i1_g.23393_m.23393:  20  
+ TRINITY_DN46938_c1_g1_TRINITY_DN46938_c1_g1_i1_g.24007_m.24007:  19  
+ (Other)                                                       :1315  
+      POS         OBS.HOM1.HET.HOM2.        E.HOM1.HET.HOM2.
+ Min.   :   1.0   21/1/0 :822        21.01/0.98/0.01:822    
+ 1st Qu.: 179.0   20/2/0 :202        20.05/1.91/0.05:240    
+ Median : 321.0   19/3/0 : 96        19.10/2.80/0.10:103    
+ Mean   : 630.5   18/4/0 : 69        18.18/3.64/0.18: 82    
+ 3rd Qu.: 728.2   17/5/0 : 44        17.28/4.43/0.28: 60    
+ Max.   :6511.0   21/0/1 : 38        16.41/5.18/0.41: 29    
+                  (Other):193        (Other)        :128    
+   ChiSq_HWE             P_HWE           P_HET_DEFICIT      
+ Min.   : 0.000094   Min.   :0.0000004   Min.   :0.0000004  
+ 1st Qu.: 0.011898   1st Qu.:1.0000000   1st Qu.:1.0000000  
+ Median : 0.011898   Median :1.0000000   Median :1.0000000  
+ Mean   : 0.943981   Mean   :0.9194100   Mean   :0.9216362  
+ 3rd Qu.: 0.117787   3rd Qu.:1.0000000   3rd Qu.:1.0000000  
+ Max.   :22.000000   Max.   :1.0000000   Max.   :1.0000000  
+                                                            
+  P_HET_EXCESS      
+ Min.   :0.0005731  
+ 1st Qu.:0.9767442  
+ Median :1.0000000  
+ Mean   :0.9432001  
+ 3rd Qu.:1.0000000  
+ Max.   :1.0000000  
+                    
+Now we can look at which rows in a data set have particular value, for instance, which rows of HW P Deficit are less than 0.01:
+```{}
+> which(hwe$P_HET_DEFICIT<0.01)
+```
+
+We can print out all the rows of the data frame which satisfy our condition (p<0.01); 
+```{}
+> hwe[which(hwe$P_HET_DEFICIT<0.01),]
+```
+                                                                  CHR POS
+1001 TRINITY_DN45155_c27_g2_TRINITY_DN45155_c27_g2_i2_g.18743_m.18743 216
+1021 TRINITY_DN45155_c27_g1_TRINITY_DN45155_c27_g1_i1_g.18742_m.18742  99
+1023 TRINITY_DN45155_c27_g1_TRINITY_DN45155_c27_g1_i1_g.18742_m.18742 138
+1300     TRINITY_DN39079_c3_g1_TRINITY_DN39079_c3_g1_i1_g.8354_m.8354 244
+1302     TRINITY_DN39079_c3_g1_TRINITY_DN39079_c3_g1_i1_g.8354_m.8354 279
+1320     TRINITY_DN39696_c4_g1_TRINITY_DN39696_c4_g1_i1_g.8926_m.8926 283
+1407   TRINITY_DN42225_c1_g1_TRINITY_DN42225_c1_g1_i1_g.12458_m.12458 220
+1409   TRINITY_DN42225_c1_g1_TRINITY_DN42225_c1_g1_i1_g.12458_m.12458 255
+     OBS.HOM1.HET.HOM2. E.HOM1.HET.HOM2. ChiSq_HWE        P_HWE P_HET_DEFICIT
+1001             20/0/2  18.18/3.64/0.18        22 1.701645e-03  1.701645e-03
+1021            10/0/12  4.55/10.91/6.55        22 3.671957e-07  3.671957e-07
+1023             17/0/5  13.14/7.73/1.14        22 1.061317e-05  1.061317e-05
+1300            12/0/10  6.55/10.91/4.55        22 3.671957e-07  3.671957e-07
+1302             20/0/2  18.18/3.64/0.18        22 1.701645e-03  1.701645e-03
+1320            12/0/10  6.55/10.91/4.55        22 3.671957e-07  3.671957e-07
+1407            10/0/12  4.55/10.91/6.55        22 3.671957e-07  3.671957e-07
+1409             20/0/2  18.18/3.64/0.18        22 1.701645e-03  1.701645e-03
+     P_HET_EXCESS
+1001            1
+1021            1
+1023            1
+1300            1
+1302            1
+1320            1
+1407            1
+1409            1
+> 
+
+Here, we are seeing some effects of how linkage can effect sites that are close together!
+
+##Back to VSFtools on the terminal##
+
+There are quite a few aspects we can look at regarding diversity (below taken from tutorial):
+
+Nucleotide diversity (pi): The average number of pairwise differences between all individuals in the population. This is equivalent to the expected heterozygosity (2pq) for a bi-allelic locus.
+Allele frequencies (p and q): What is the frequency of a given SNP? Usually defined in terms of the Major (common) and minor (rare) allele at each SNP locus.
+Site Frequency Spectrum (SFS): Also known as the "Allele Frequncy Spectrum". It is the histogram of allele frequencies across all SNP loci. In other words, how many loci are rare (say, frequency in the population between 0-0.1)? How many loci are common (0.4-0.5)? It turns out the shape of this distribution has an incredible amount of information in it…both about the population's demographic history (Ne, size changes) and also selection (purifying selection, positive selection)
+
+For now, we will look at allele frequencies
+
+Let's check out the individuals and compare SNP data for Healthy vs. Sick#
+
+Individual      Trajectory      Location        SNPs
+10      HH      INT     N
+24      HH      INT     Y
+27      HH      INT     Y
+08      HS      INT     Y
+09      HS      INT     Y
+15      HS      INT     Y
+19      HS      INT     Y
+20      HS      INT     Y
+03      SS      INT     Y
+07      SS      INT     Y
+14      SS      INT     Y
+22      SS      INT     Y
+23      SS      INT     Y
+26      SS      INT     Y
+28      SS      INT     Y
+29      SS      INT     Y
+31      HH      SUB     Y
+32      HH      SUB     Y
+33      HH      SUB     Y
+34      HH      SUB     N
+35      HH      SUB     Y
+36      SS      SUB     Y
+37      MM      SUB     Y
+38      MM      SUB     Y
+
+
+Let's take HH and put it in a file. Then take SS and HS and put those in a file on my home directory.
+```{}
+
+[rtyler1@pbio381 reads2snps]$ grep "HH" ssw_healthloc.txt > ~/H_OneSampPerInd.txt
+[rtyler1@pbio381 reads2snps]$ grep "SS" ssw_healthloc.txt > ~/S_OneSampPerInd.txt
+[rtyler1@pbio381 reads2snps]$ grep "HS" ssw_healthloc.txt >> ~/S_OneSampPerInd.txt #double carrot thing adds this data to the end of the other S_OneSam....text file name
+```
+
+Now we need to cut off the column that we need and name it something else:
+
+```{}
+[rtyler1@pbio381 ~]$ cut -f 1 H_OneSampPerInd.txt > H_OneSampPerInd2.txt
+[rtyler1@pbio381 ~]$ cut -f 1 S_OneSampPerInd.txt > S_OneSampPerInd2.txt
+```
+
+Now we will run VCFtools to check allele frequencies: Recall that Wright's Fst measures allele frequency variance between groups, but standardizes the estimate based on the mean frequencies within groups. This gives a complimentary view to just comparing the raw frequencies.
+
+```{}
+[rtyler1@pbio381 ~]$ vcftools --gzvcf SSW_all_biallelic.MAF0.02.Miss0.8.recode.vcf.gz --freq2 --keep H_OneSampPerInd2.txt --out H_AlleleFreqs
+```
+
+

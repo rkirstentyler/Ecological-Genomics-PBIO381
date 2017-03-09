@@ -1,0 +1,302 @@
+---
+title: "DESeq2_SSW_round2.1"
+author: "R Kirsten Tyler"
+date: "2/27/2017"
+output: html_document
+---
+
+###Modeling our data###
+
+Previously, Melissa did this: 
+
+Update on Making and Mapping to a new reference transcriptome:
+ - Concatenated fastq files from 4 individuals (over 200M reads) both sick and healthy.
+ - Digital normalization by kmer to make a smaller file size (8.7% of original size).
+ - Ran Trinity with really low max-memory and CPUs so that it would complete without crashing
+ - Predicted ORFs with TransDecoder.pl script.
+ - Evaluated contig stats to find that they were fewer, longer contigs.
+ - Mapped reads to this new assembly.
+ - Extracted read counts
+ - Assembled read counts table.
+ 
+#Today!#
+
+1. Move new data
+2. DESeq 2
+  - 5 models
+3. Your models
+
+Our new assembly:
+Melissa used the longest isoform
+But longest isoform does not equal best isoform
+However, by taking the longest one, we are recovering more of our reads
+
+We are using [this tutorial] (https://www.bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2_pdf.pdf)
+
+```{r}
+setwd("~/Documents/Ecological Genomics PBIO381/")
+
+library(DESeq2)
+library(ggplot2)
+
+
+countsTable <- read.delim('countsdata_trim2.txt', header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+countData <- as.matrix(countsTable)
+head(countData)
+```
+
+
+```{r}
+conds <- read.delim("cols_data_trim.txt", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+head(conds)
+```
+
+
+```{r}
+colData <- as.data.frame(conds)
+head(colData)
+```
+
+# MODEL NUMBER 1: TEST EFFECT OF HEALTH CONTROLLING FOR LOCATION #
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ location + health) 
+# Here, we are asking: what's the effect of health given the location?
+# so we are focusing in on the LAST term as the one that is the main effect
+# in this typical model, the "health effect" represents the overall effect of health status, controlling for differences due to location
+
+dim(dds)
+dds <- dds[ rowSums(counts(dds)) > 100, ]
+dim(dds)
+
+```
+
+
+
+```{r}
+
+# For practice, let's work with fewer genes so that the models can run faster...
+dds <- dds[sample(nrow(dds), 1200), ] #randomly sample of 1200 rows from our 12000 row data matrix. when we do our real analyses, we won't want to sample - we'll want to use the entire data matrix
+dim(dds)
+```
+
+
+```{r}
+
+colData(dds)$health <- factor(colData(dds)$health, levels=c("H","S")) #sets that "healthy" is the reference
+
+dds <- DESeq(dds) #Running the model
+```
+
+```{r}
+res <- results(dds)
+res <- res[order(res$padj),] #this sorts our results by the adjusted p-value. Nice!
+head(res)
+```
+
+```{r}
+summary(res)
+```
+
+We can see here that (up = more highly expressed in sick) + (down = more highly expressed in healthy) genes are differentially expressed between the healthy and sick individuals in our data set
+
+
+
+# MODEL NUMBER 2 - INTERACTIONS #
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ location + health + location:health) #now we are adding "interaction of location and health"
+
+dim(dds)
+```
+
+
+```{r}
+dds <- dds[ rowSums(counts(dds)) > 100, ]
+
+dds <- dds[sample(nrow(dds), 1200), ]
+dim(dds)
+
+colData(dds)$health <- factor(colData(dds)$health, levels=c("H","S"))  #sets that "healthy is the reference
+
+dds <- DESeq(dds, parallel=T) #Running the model (parallel = using two cores on my computer = wicked fast!!)
+```
+
+
+```{r}
+resultsNames(dds) #checking out the results headers
+```
+
+
+```{r}
+res <- results(dds, name="locationsub.healthS")
+res <- res[order(res$padj),] #ordering the results (genes) by adjusted p-value (most significant will be at the top of the results matrix)
+head(res) # a list of the genes by significance
+
+```
+
+
+
+```{r}
+summary(res)
+```
+
+# MODEL NUMBER 3 - GROUP DESIGNS can be used for contrasts of interest or interactions #
+```{r}
+colData$group <- factor(paste0(colData$location, ".", colData$health, ".", colData$score)) #here we are pasting together different variables in which we are interested into a group. This helps us focus on subsets of data. We can focus on specific parts of data: a specific day, for example.
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ group) 
+dim(dds)
+head(colData$group)
+```
+
+
+```{r}
+dds <- dds[ rowSums(counts(dds)) > 100, ]
+
+dds <- dds[sample(nrow(dds), 1200), ]
+dim(dds)
+
+dds <- DESeq(dds, parallel=T)
+```
+
+
+```{r}
+resultsNames(dds) #checking out the results 
+
+```
+
+
+```{r}
+res <- results(dds, contrast=list( c("groupint.H.0","groupsub.H.0"), c("groupint.S.1","groupsub.S.1")), listValues=c(1/2, -1/2)) #means have to equal to zero. We are balancing the results
+
+res <- res[order(res$padj),]
+head(res)
+```
+
+```{r}
+summary(res)
+```
+
+
+# MODEL NUMBER 4 - TIME SERIES USING REDUCED MODELS #
+## based on example on [bioconductor]: (http://www.bioconductor.org/help/workflows/rnaseqGene/#running-the-differential-expression-pipeline)
+
+```{r}
+ddsTS <- DESeqDataSetFromMatrix(countData = countData, colData = colData, ~ health + day + health:day)
+ddsTS <- ddsTS[ rowSums(counts(ddsTS)) > 100, ]
+
+ddsTS <- ddsTS[sample(nrow(ddsTS), 1200), ]
+dim(ddsTS) 
+```
+
+
+```{r}
+ddsTS <- DESeq(ddsTS, parallel=T, test="LRT", reduced = ~ health + day) #log likelihood ratio test = look at distributions to see if there are differences. Does this model significantly show the variance in the data? Which model does it better?
+
+#Questions: what does "reduced" mean? What is the test "LRT"? Take the interaction out and test the likelihood of that model again
+resTS <- results(ddsTS)
+resTS$symbol <- mcols(ddsTS)$symbol
+
+head(resTS[order(resTS$padj),],4)
+```
+
+
+```{r}
+summary(resTS)
+```
+
+# MODEL NUMBER 5 - EFFECT OF DISEASE SEVERITY SCORE #
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ score) 
+dim(dds)
+
+dds <- dds[ rowSums(counts(dds)) > 100, ]
+
+#PRACTICE SAMPLE (COMMENT OUT THE LINE WHEN PERFORMING REAL ANALYSIS)
+dds <- dds[sample(nrow(dds), 1200), ]
+dim(dds)
+```
+
+
+```{r}
+dds <- DESeq(dds, parallel=T) #Running the model
+
+res <- results(dds)
+res <- res[order(res$padj),]
+head(res)
+```
+
+
+```{r}
+summary(res)
+```
+
+
+# MODEL NUMBER 6 thru INFINITY - YOUR CHOICE...#
+
+#Data quality assessment by sample clustering and visualization#
+```{r}
+plotMA(res, main="DESeq2", ylim=c(-2,2))
+```
+
+
+```{r}
+## Check out one of the genes to see if it's behaving as expected....
+d <- plotCounts(dds, gene="TRINITY_DN44744_c1_g2_TRINITY_DN44744_c1_g2_i2_g.17686_m.17686", intgroup=(c("health","day","location")), returnData=TRUE) #plotCounts is pulling out the gene of interest and looking at different factors of it
+d
+```
+
+```{r}
+p <- ggplot(d, aes(x= health, y=count, shape = location)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
+p <- p + geom_point(position=position_jitter(w=0.3,h=0), size = 3) + ylim(0,500)
+p
+```
+
+```{r}
+## Check out one of the genes to see interaction between score, health and expression....
+d <- plotCounts(dds, gene="TRINITY_DN46245_c3_g3_TRINITY_DN46245_c3_g3_i2_g.21719_m.21719", intgroup=(c("health","score","location")), returnData=TRUE)
+d
+```
+
+
+```{r}
+p <- ggplot(d, aes(x= score, y=count, shape = health, color = location)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
+p <- p + geom_point(position=position_jitter(w=0.3,h=0), size = 3) 
+p
+```
+
+```{r}
+p <- ggplot(d, aes(x=score, y=count, color=health, group=health)) 
+p <- p +  geom_point() + stat_smooth(se=FALSE,method="loess") +  scale_y_log10()
+p
+```
+```{r}
+############## PCA plots
+vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
+
+plotPCA(vsd, intgroup=c("score")) #we are looking at health score (0 = healthy; 5 = dead; 1,2,3,4 = sick to different extents)
+```
+
+
+```{r}
+plotPCA(vsd, intgroup=c("health"))
+```
+
+
+```{r}
+plotPCA(vsd, intgroup=c("day"))
+```
+
+
+```{r}
+plotPCA(vsd, intgroup=c("location"))
+```
+
+
+```{r}
+plotPCA(vsd, intgroup=c("health","location"))
+```
+
+
+
+

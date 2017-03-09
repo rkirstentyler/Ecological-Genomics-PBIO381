@@ -1,0 +1,199 @@
+---
+title: "DESeq Sea Star Analysis"
+author: "R Kirsten Tyler"
+date: "3/6/2017"
+output: html_document
+---
+
+##Homework 2##   
+##DESeq Analysis of Sea Star Data##
+
+```{r}
+setwd("~/Documents/Ecological_Genomics_PBIO381/")
+
+library(DESeq2)
+library(ggplot2)
+
+
+countsTable <- read.delim('countsdata_trim2.txt', header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+countData <- as.matrix(countsTable)
+head(countData)
+```
+
+
+```{r}
+conds <- read.delim("cols_data_trim.txt", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+head(conds)
+```
+
+
+```{r}
+colData <- as.data.frame(conds)
+head(colData)
+tail(colData)
+```
+
+##Model 1: Effect of health, controlling for location##
+```{r}
+dds1 <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ location + health) 
+
+# Here, we are asking: what's the effect of health given the location?
+# so we are focusing in on the LAST term as the one that is the main effect (health)
+# in this typical model, the "health effect" represents the overall effect of health status, controlling for differences due to location
+
+dim(dds1)
+dds1 <- dds1[ rowSums(counts(dds1)) > 100, ]
+
+```
+
+#Running the model#
+```{r}
+
+colData(dds1)$health <- factor(colData(dds1)$health, levels=c("H","S")) #sets that "health" is the reference
+
+dds1 <- DESeq(dds1) #Running the model
+```
+
+#Results for Model 1#
+```{r}
+res1 <- results(dds1)
+res1 <- res1[order(res1$padj),] #this sorts our results by the adjusted p-value. Lovely.
+head(res1, n = 50)
+
+```
+
+
+#Summary table#
+```{r}
+summary(res1)
+```
+
+We can view in the summary table that (up = more highly expressed in sick) + (down = more highly expressed in healthy) genes are differentially expressed between the healthy and sick individuals in our data set
+For this data set (overall), there are 209 genes that are more highly expressed in sick individuals AND there are 65 genes that are more highly expressed in healthy individuals.
+
+
+#Taking a closer look at the genes that are differentially expressed#
+```{r}
+d <- plotCounts(dds1, gene="TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110", intgroup=(c("health","location")), returnData=TRUE)
+d
+p <- ggplot(d, aes(x= location, y=count, shape = health, color = health)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
+p <- p + geom_point(position=position_jitter(w=0.3,h=0), size = 3) 
+p
+```
+
+```{r}
+d1 <- plotCounts(dds1, gene="TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110", intgroup=(c("health","location")), returnData=TRUE)
+d1
+p1 <- ggplot(d, aes(x= location, y=count, shape = health, color = health)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
+p1 <- p1 + geom_point(position=position_jitter(w=0.3,h=0), size = 3) 
+p1
+
+#What does "shape" mean in this plot? the different variables that health could be : s and h
+```
+
+
+#PCA plots#
+```{r}
+vsd1 <- varianceStabilizingTransformation(dds1, blind=FALSE)
+plotPCA(vsd1, intgroup=c("health","location"))
+```
+This is a bit of a bumbly mess. I'm not seeing any trends here.
+
+```{r}
+plotPCA(vsd1, intgroup=c("health"))
+```
+No trends here either.
+
+##Model 2 - Group design##
+```{r}
+colData$group <- factor(paste0(colData$location, ".", colData$health, ".")) #here we are pasting together different variables of which we are interested into a group. This helps us focus on subsets of data. We can focus on specific parts of data: looking at H vs S in specific locations, for example
+dds2 <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ group) 
+dim(dds2)
+head(colData$group)
+```
+
+
+```{r}
+dds2 <- dds2[ rowSums(counts(dds2)) > 100, ]
+dds2 <- DESeq(dds2, parallel=T) #Running the model super fast (thanks, parallel=T)
+```
+
+#Results for Model 2#
+
+#Intertidal Comparisons#
+```{r}
+res2 <- results(dds2)
+res2 <- results(dds2, contrast=c("group","int.S.","int.H."), listValues=c(1/2, -1/2))
+res2 <- res2[order(res2$padj),] #sorting results by adjusted p-value
+
+res2sig <- res2[which(res2$padj < 0.01),] #subsetting only the genes that are significantly (p < 0.01) differentially expressed in the intertidal local
+
+head(res2sig)
+
+dim(res2sig) #just looking at the dimensions to see how many rows
+```
+
+#Summary table for Intertidal Comparison#
+```{r}
+summary(res2)
+```
+
+```{r}
+plotMA(res2, main="Intertidal Comparison", ylim=c(-2,2))
+```
+I don't know what I'm looking at here. 
+
+```{r}
+vsd2 <- varianceStabilizingTransformation(dds2, blind=FALSE)
+plotPCA(vsd2, intgroup=c("health"))
+```
+This doesn't look nice either. Meh.
+
+
+
+#Subtidal Comparison#
+```{r}
+res3 <- results(dds2)
+res3 <- results(dds2, contrast=c("group","sub.S.","sub.H."), listValues=c(1/2, -1/2))
+res3 <- res3[order(res3$padj),] #sorting results by adjusted p-value
+
+res3sig <- res3[which(res3$padj < 0.01),] #subsetting only the genes that are significantly (p < 0.01) differentially expressed in the subtidal local
+
+head(res3sig)
+dim(res3sig)
+```
+
+#Summary table for Subtidal Comparison#
+```{r}
+summary(res3)
+```
+
+We are seeing a BIG difference between intertidal and subtidal expression levels. In the intertidal location, we see 237 genes that are differentially expressed in sick individuals and 58 genes that are differentially expressed in healthy individuals. This is a stark difference from what we see in the subtidal location. We see only 7 genes that are differentially expressed in sick individuals and 31 genes that are differentially expressed in healthy individuals in the subtidal location.
+
+Between the two models, a trend is visible in that sick individuals have more differentially expressed genes than healthy individuals. The largest difference found is in the number of differentially expressed genes in sick individuals between locations. There are far more genes differentially expressed in sick individuals in the intertidal location. 
+
+
+#Comparison in sick indivuals between locations#
+```{r}
+res4 <- results(dds2)
+res4 <- results(dds2, contrast=c("group","sub.S.","int.S."), listValues=c(1/2, -1/2))
+res4 <- res4[order(res4$padj),] #sorting results by adjusted p-value
+
+res4sig <- res4[which(res4$padj < 0.01),] #subsetting only the genes that are significantly (p < 0.01) differentially expressed in sick individuals of both locations
+
+head(res4sig)
+```
+
+#Summary table for Sick Comparison#
+```{r}
+summary(res4sig)
+```
+So for this analysis, we looked at differences in expressed genes between sick individuals at each location. The result is interesting, in that there are only 3 genes that are differentially expressed between the two groups of sick individuals. 
+
+
+
+
+
+
+
+
