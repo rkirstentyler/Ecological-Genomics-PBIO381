@@ -13,9 +13,8 @@ setwd("~/Documents/Ecological_Genomics_PBIO381/")
 
 library(DESeq2)
 library(ggplot2)
-
-source("https://bioconductor.org/biocLite.R")
-biocLite("ReportingTools")
+library(ReportingTools)
+library(xtable)
 
 countsTable <- read.delim('countsdata_trim2.txt', header = TRUE, stringsAsFactors = TRUE, row.names = 1)
 countData <- as.matrix(countsTable)
@@ -59,16 +58,24 @@ dds1 <- DESeq(dds1) #Running the model
 ```{r}
 res1 <- results(dds1)
 res1 <- res1[order(res1$padj),] #this sorts our results by the adjusted p-value. Lovely.
-head(res1, n = 50)
+head(res1, n = 20)
+res1
 ```
 
 
-
+#Trying the Reporting tool in DESeq2#
 ```{r}
 
-
-
-
+des2Report <- HTMLReport(shortName = 'RNAseq_analysis_with_DESeq2',
+     title = 'RNA-seq analysis of differential expression using DESeq2',
+     reportDirectory = "./reports")
+ publish(dds1,des2Report, pvalueCutoff=0.05,
+     annotation.db="org.Mm.eg.db", factor = colData(dds1)$location,
+     reportDir="./reports")
+ finish(des2Report)
+ 
+des2Report #using the Report function in DESeq2, I [accidentally] created a boxplot for every gene (yes, EVERY GENE) that is differentially expressed with a p-value of <0.05
+#the boxplots are located on github in the folder "DESeq2 reports from R", if anyone wants to look at them. They're pretty ugly.
 
 ```
 #Summary table#
@@ -79,26 +86,14 @@ summary(res1)
 We can view in the summary table that (up = more highly expressed in sick) + (down = more highly expressed in healthy) genes are differentially expressed between the healthy and sick individuals in our data set
 For this data set (overall), there are 209 genes that are more highly expressed in sick individuals AND there are 65 genes that are more highly expressed in healthy individuals.
 
-
 #Taking a closer look at the genes that are differentially expressed#
 ```{r}
-d <- plotCounts(dds1, gene="TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110", intgroup=(c("health","location")), returnData=TRUE)
+d <- plotCounts(dds1, gene="TRINITY_DN43359_c0_g1_TRINITY_DN43359_c0_g1_i1_g.14658_m.14658", intgroup=(c("health","location")), returnData=TRUE)
 d
 p <- ggplot(d, aes(x= location, y=count, shape = health, color = health)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
 p <- p + geom_point(position=position_jitter(w=0.3,h=0), size = 3) 
 p
 ```
-
-```{r}
-d1 <- plotCounts(dds1, gene="TRINITY_DN43080_c1_g1_TRINITY_DN43080_c1_g1_i3_g.14110_m.14110", intgroup=(c("health","location")), returnData=TRUE)
-d1
-p1 <- ggplot(d, aes(x= location, y=count, shape = health, color = health)) + theme_minimal() + theme(text = element_text(size=20), panel.grid.major = element_line(colour = "grey"))
-p1 <- p1 + geom_point(position=position_jitter(w=0.3,h=0), size = 3) 
-p1
-
-#What does "shape" mean in this plot? the different variables that health could be : s and h
-```
-
 
 #PCA plots#
 ```{r}
@@ -181,7 +176,7 @@ We are seeing a BIG difference between intertidal and subtidal expression levels
 Between the two models, a trend is visible in that sick individuals have more differentially expressed genes than healthy individuals. The largest difference found is in the number of differentially expressed genes in sick individuals between locations. There are far more genes differentially expressed in sick individuals in the intertidal location. 
 
 
-#Comparison in sick indivuals between locations#
+#Comparison in sick individuals between locations#
 ```{r}
 res4 <- results(dds2)
 res4 <- results(dds2, contrast=c("group","sub.S.","int.S."), listValues=c(1/2, -1/2))
@@ -196,7 +191,7 @@ head(res4sig)
 ```{r}
 summary(res4sig)
 ```
-So for this analysis, we looked at differences in expressed genes between sick individuals at each location. The result is interesting, in that there are only 3 genes that are differentially expressed between the two groups of sick individuals. 
+So for this analysis, we looked at differences in expressed genes between sick individuals at each location. The result is interesting, in that there are only 3 genes that are differentially expressed between the two groups of sick individuals. Perhaps this was model was set up incorrectly.
 
 
 
