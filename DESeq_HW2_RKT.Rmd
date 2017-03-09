@@ -8,12 +8,14 @@ output: html_document
 ##Homework 2##   
 ##DESeq Analysis of Sea Star Data##
 
-```{r}
+```{r message=FALSE}
 setwd("~/Documents/Ecological_Genomics_PBIO381/")
 
 library(DESeq2)
 library(ggplot2)
 
+source("https://bioconductor.org/biocLite.R")
+biocLite("ReportingTools")
 
 countsTable <- read.delim('countsdata_trim2.txt', header = TRUE, stringsAsFactors = TRUE, row.names = 1)
 countData <- as.matrix(countsTable)
@@ -47,8 +49,7 @@ dds1 <- dds1[ rowSums(counts(dds1)) > 100, ]
 ```
 
 #Running the model#
-```{r}
-
+```{r message=FALSE}
 colData(dds1)$health <- factor(colData(dds1)$health, levels=c("H","S")) #sets that "health" is the reference
 
 dds1 <- DESeq(dds1) #Running the model
@@ -59,10 +60,17 @@ dds1 <- DESeq(dds1) #Running the model
 res1 <- results(dds1)
 res1 <- res1[order(res1$padj),] #this sorts our results by the adjusted p-value. Lovely.
 head(res1, n = 50)
-
 ```
 
 
+
+```{r}
+
+
+
+
+
+```
 #Summary table#
 ```{r}
 summary(res1)
