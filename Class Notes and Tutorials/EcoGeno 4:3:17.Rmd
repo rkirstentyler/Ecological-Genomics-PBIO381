@@ -1,0 +1,55 @@
+---
+title: "EcoGeno 4/3/17"
+author: "R Kirsten Tyler"
+date: "4/3/2017"
+output: html_document
+---
+
+**FST and other important concepts**
+
+Concepts for today: 
+1. Inbreeding produces structured pops
+2. Selective sweeps change allele freq in pops
+3. Empirical p-values created from distribution of putatively neutral loci are super useful for frad NS
+4. Methods: Out Flank (2015)
+
+
+Challenges: 
+What challenges do outlier detection methods face?
+How is linkage disequilibrium friend or foe?
+
+FST is commonly used statistic in the family of: 
+
+*F statistics*
+
+look at heterozygosity
+  - look at level of ind
+  - look at subpopulation
+  - over all pops
+  
+Inbreeding coefficient: 2 alleles in pop are identical by decent
+
+FST subpop: heteroz of sub pop according to the total Ht - Hs / Ht
+FIS: expected heteroz - observed heteroz over expected heteroz: exp(Hs) - obs(Hs) / exp(Hs)
+FIT: total heteroz - heteroz of indiv over heteroz of total: Ht - Hi / Ht
+
+*genetic patterns are driven by inbreeding*
+
+within pop genetic diversity: increased inbreeding causes lowered diversity in a population
+regional diversity: more distinct populations; as populations become more inbred, the diversity of the region increases because they are distinctively separate populaitons
+total diversity: as inbreeding increases, genetic diversity first increases, then decreases over time (see picture of graph)
+
+*Linkage disequilibrium:* along with an adaptive allele, may come some neutral alleles. How can you distinguish between the adaptive and neutral alleles???
+
+*Out Flank*
+we have a distribution x = fst, y = frequency with all loci plotted
+loci that are experiencing selective adaptation will be in the tails of our distribution (low frequency)
+balancing selection will be in the middle of the distribution (high frequency)
+looking for local adaptation or spatially heterogenous selection
+Out Flank - removes sites that are homozygous; then calcs fst for all of your loci; calc mean fst; then trim the tails and calculate this distribution again
+  
+\\\\\\\  
+  
+  
+  
+  

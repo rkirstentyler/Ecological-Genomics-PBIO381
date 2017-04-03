@@ -1,0 +1,141 @@
+---
+title: "3/29/17 ADMIXTURE"
+author: "R Kirsten Tyler"
+date: "3/29/2017"
+output: html_document
+---
+
+**Population Genomics 4: Population Structure with ADMIXTURE**
+
+**Admixture analysis**
+
+Pr (G | K, Q, P)
+
+for a given level of k thats user defined, evaluate a level of k2 for example, find  a combo of allele freq for each pop that best describe your empirical data
+
+does this entirely within a max likelihood model....not bayesian.... 
+    good and bad things about that: good = it's fast. bad = can't use bayesian probability for deciding a good model
+    they've overcome this by using something else to decide which model is best.
+
+cross validation method: (jackknife) mask 5 individuals genotypes, try to estimate q and p of those masked genotypes based on the other non-masked genotypes
+
+*FIRST LET'S CONVERT A FILE SO ADMIXTURE WILL LIKE IT*
+```{}
+[rtyler1@pbio381 ~]$ cd /data/project_data/snps/reads2snps/
+[rtyler1@pbio381 ~]$ vi *spid
+```
+
+These are the areas that we'll use to convert files: 
+#Select population definition file 
+#Eigensoft Writer questions
+
+Moving files to the home directory: 
+```{}
+[rtyler1@pbio381 reads2snps]$ cp SSW_tidal.pops ~/
+[rtyler1@pbio381 reads2snps]$ cp vcf2admixture_SSW.spid ~/
+[rtyler1@pbio381 reads2snps]$ cp vcf2geno.sh ~/
+
+```
+
+a *bash script* let's you write commands like you would at the command line but let's you store them all at once. it will let you do all the commands in order for: 
+  1. repro research
+  2. you don't have to babysit your command. you can let it run while you go do something else
+  
+
+Here's what you do:  change the "yourinputfile" and "youroutputfile" to the file names
+```{}
+#!/bin/bash (this tells the computer what commands you will feed it)
+
+
+java -Xmx512M -jar /data/popgen/PGDSpider_2.0.9.0/PGDSpider2-cli.jar -inputfile ./yourinputfile.vcf -inputformat VCF -outputfile ./youroutputfile.vcf.geno -outputformat EIGENSOFT -spid ./vcf2admixture_SSW.spid
+
+```
+
+#!/bin/bash
+
+# Run ADMIXTURE to determine the number of genetic clusters in the SNP data, 
+# and the ancestry proportions of each individual
+
+# Here's the utility of 'for loops'...
+
+```{}
+for K in {1..10}
+
+do
+
+admixture -C 0.000001 --cv ./SSW_all_biallelic.MAF0.02.Miss1.0.recode.vcf.geno $K \
+| tee log${K}.out
+
+############admixture is program, -C is likelihood (we are using .000001), $K is our variable (we have a loop of K: 1 through 10 by 1), the pipe tells it where to go, 
+
+done
+
+# After the for loop finishes, you can use 'grep' to grab the values of the CV from each separate log file and append them into a new summary text file.
+
+grep CV log*.out >chooseK.txt    ###grabs cross-validation errors within each file and put it in a file called "chooseK.txt"
+
+
+"ADMIX.sh" 22L, 501C             
+```
+
+Now let's run it to see which K works better: 
+
+```{}
+[rtyler1@pbio381 ~]$ bash vcf2geno.sh 
+```
+
+Now we look at the chooseK text file to look at the "scores" of different K's: 
+
+```{}
+[rtyler1@pbio381 ~]$ cat chooseK.txt 
+```
+
+log10.out:CV error (K=10): 0.54329
+log1.out:CV error (K=1): 0.52967
+log2.out:CV error (K=2): 0.62210
+log3.out:CV error (K=3): 0.72173
+log4.out:CV error (K=4): 0.81377
+log5.out:CV error (K=5): 0.89176
+log6.out:CV error (K=6): 0.94948
+log7.out:CV error (K=7): 0.89471
+log8.out:CV error (K=8): 0.96684
+log9.out:CV error (K=9): 0.95880
+
+So we see here that the best model is K1 because it has the lowest error rate (or highest likelihood). 
+
+What we've learned about diversity and structrue: 
+
+
+we've learned that nucleotide diversity that fits in teh romig paper. our diversity is on the low side. the sample is unstructured in intertidal vs subtidal if you look across all snps
+
+but if we look across teh descriminite analysis, we assked if there are snps that help us dtermine healthy vs sick, we can see a few. 
+
+reapply the tools you've learned to refilter your filtering strategies. (only keep snps that have two alleles, eliminate any snps that have missing data...etc etc)...we've read a lot of papers that have different flavors of this
+
+if you looked at rare alleles (minor allele frequency - - - it's in a tutorial MAF)
+
+apply a different filter to the vcf file that is in the reads2snps directory. use the readings we've done. 
+
+what would you expect if you got rid of all the rare adn only loooked at common snps - how would that change your perspective
+think about which of these would be having an effect on our inference
+
+use the same analysis for each of our new datasets (PCA, DAPC, or ADMIXTURE)
+
+example: read depth (depth coverage). if you dont have more than 20 reads covering a snp you cant assume that to be a snp. 
+
+maf of 0.01 or 0.05 is most common
+hwe: tests deviation from random mating expectations. this filter is based on teh p-value ffrom hw test usually 
+0.01
+
+
+
+
+
+
+
+
+
+
+
+
+

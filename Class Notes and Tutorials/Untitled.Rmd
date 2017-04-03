@@ -1,0 +1,47 @@
+---
+title: "EcoGeno 3/29/17"
+author: "R Kirsten Tyler"
+date: "3/29/2017"
+output: html_document
+---
+
+***Adaptation: Selective Sweeps***
+
+*Local adaptation signatures are very difficult to locate*
+
+***Detecting Local Adaptation from Population Genomic Outlier Analysis***
+
+1. local adaptation: maybe some individuals in a popualtion have difference in allele frequencies (in response to an environmental variable like disease in seastars)
+
+2. Different approaches: 
+  genetic environment association analyses; 
+  differentiation outlier method (Fst)
+
+3. Challenges: 
+  confounding factors: demographic history; neutral population structure; background selection
+  missing genome: missing data = reduced representation; missing structural variants in reference (because you're mapping to       only one reference); loss of repetitive regions / paralogs
+  missing landscape: having low-resolution environmental data (missing details in your study like when the seastars contracted     the disease in one area); scale of local adaptation; multi-colinearity (if disease occurs more often in high temp seas, we     might think that the cause of death is just temperature instead of the disease)
+
+4. Solutions: 
+  confounding factors: null demographic models (only if you know demographic history); relatedness amoung samples
+  missing genomes: exome; RNA-seq; whole genome sequencing; reference genome; depth coverage
+  missing landscape: know your system (get all info you possibly can: what scale local adaptation is acting on, what time scale     or variations are important, what are the driving forces)
+  
+  **getting data on the environment from which your organism comes is very important!**
+  
+5. Other considerations:
+  sampling strategy: number of individuals; paired sampling
+  multiple comparisons: FDR; sliding window
+  genomic architecture: 
+  
+6. Final notes: using this approach along with other ecological tests will help you understand the system
+  
+to look at ph for example, replicate that comparison in multiple different places 
+  
+  
+  
+  
+  
+  
+  
+  

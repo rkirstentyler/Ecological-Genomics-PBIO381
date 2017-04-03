@@ -1,0 +1,57 @@
+---
+title: "Untitled"
+author: "R Kirsten Tyler"
+date: "4/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(devtools)
+source("http://bioconductor.org/biocLite.R")
+biocLite("qvalue")
+install_github("whitlock/OutFLANK")
+
+#loading these packages:
+library(OutFLANK)
+library(vcfR)
+library(adegenet)
+
+#read in your .geno file. outflank requires it to be transpsoed, so we'll do that next: 
+ssw.geno_in <- read.fwf("~/Documents/Ecological_Genomics_PBIO381/SSW_all_biallelic.MAF0.02.Miss0.8.recode.vcf.geno", width=rep(1,24))
+ssw.geno <- t(ssw.geno_in)
+head(ssw.geno)
+str(ssw.geno)
+
+#reading in metadata
+ssw_meta <- read.table("~/Documents/Ecological_Genomics_PBIO381/ssw_healthloc.txt", T) #read in the data
+ssw_meta <- ssw_meta[order(ssw_meta$Individual),] #reorder the meta_data by Ind number
+ssw_meta$Trajectory[which(ssw_meta$Trajectory == 'MM')] = NA #remove the MMs from the analysis (setting them to NA)
+
+#now we have our metadata and our transpose file. 
+##now we run OutFLANK!!##
+
+OF_SNPs <- MakeDiploidFSTMat(ssw.geno, locusNames = seq(1, 5317, by = 1), popNames = ssw_meta$Trajectory)
+head(OF_SNPs)
+OF_out <- OutFLANK(FstDataFrame = OF_SNPs, LeftTrimFraction = 0.05, RightTrimFraction = 0.05, Hmin = 0.01, NumberOfSamples = 3, qthreshold = 0.1)
+OutFLANKResultsPlotter(OF_out, withOutliers = T, NoCorr = T, Hmin = 0.1, binwidth = 0.005, titletext = "Scan for Local Selection")
+```
+
+
+
+```{r}
+outliers <- which(OF_out$results$OutlierFlag == "TRUE")
+outliers
+```
+
+```{r}
+#we can extract info about the outliers by reading in the vcf file and looking at the annotations
+vcf1 <- read.vcfR("~/Documents/Ecological_Genomics_PBIO381/SSW_all_biallelic.MAF0.02.Miss0.8.recode.vcf")
+vcfann <- as.data.frame(getFIX(vcf1))
+vcfann[outliers, ]
+```
+
+
+
+
+
